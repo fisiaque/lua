@@ -88,6 +88,8 @@ end
 --Get initial waypoint for non-humanoid
 local function getNonHumanoidWaypoint(self)
 	--Account for multiple waypoints that are sometimes in the same place
+	print(self._waypoints)
+	print(#self._waypoints)
 	if self._waypoints then
 		for i = 2, #self._waypoints do
 			if (self._waypoints[i].Position - self._waypoints[i - 1].Position).Magnitude > 0.1 then
