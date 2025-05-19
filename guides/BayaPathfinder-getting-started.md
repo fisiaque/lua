@@ -7,7 +7,16 @@ Get the [latest release](https://github.com/fisiaque/lua/BayaPathfinder) from Gi
 !!! Note
 	Paste the folowing code to start using the module:
 
+[more info on Flags](../BayaPathfinder/API.md)
 ```lua
+local Flags = {
+	TIME_VARIANCE = 0.07;
+
+	COMPARISON_CHECKS = 1;
+
+	JUMP_WHEN_STUCK = true;
+}
+
 --Import the module so you can start using it
 local BayaPath = loadstring(game:HttpGet("https://raw.githubusercontent.com/fisiaque/lua/refs/heads/main/BayaPathfinder/src.lua"))()
 

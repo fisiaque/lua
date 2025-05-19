@@ -6,7 +6,7 @@ The following examples is explained in detail [here](../guides/BayaPathfinder-ge
 
 ## Using Events
 
-[more info on Flags](../BayaPathfinder/API.md)
+[more info on Flags](../API.md)
 
 ```lua linenums="1"
 -- Default settings which you can edit
