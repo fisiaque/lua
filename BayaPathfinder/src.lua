@@ -85,7 +85,7 @@ local function destroyVisualWaypoints(waypoints)
 	return
 end
 
---Get initial waypoint for non-humanoid
+--Get initial waypoint for non-humanoid 
 local function getNonHumanoidWaypoint(self)
 	--Account for multiple waypoints that are sometimes in the same place
 	if self and (self._waypoints and #self._waypoints ~= nil) then
