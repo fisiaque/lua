@@ -19,7 +19,7 @@ local Flags = {
 }
 
 --Import the module so you can start using it
-local BayaPath = loadstring(game:HttpGet(""))()
+local BayaPath = loadstring(game:HttpGet("https://raw.githubusercontent.com/fisiaque/lua/refs/heads/main/BayaPathfinder/src.lua"))()
 
 --Define character
 local Character = game.Players.LocalPlayer.Character
@@ -62,7 +62,7 @@ Path:Run(Destination)
 
 ```lua linenums="1"
 --Import the module so you can start using it
-local BayaPath = loadstring(game:HttpGet(""))()
+local BayaPath = loadstring(game:HttpGet("https://raw.githubusercontent.com/fisiaque/lua/refs/heads/main/BayaPathfinder/src.lua"))()
 
 --Define character
 local Character = game.Players.LocalPlayer.Character

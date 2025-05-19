@@ -9,7 +9,7 @@ Get the [latest release](https://github.com/fisiaque/lua/BayaPathfinder) from Gi
 
 ```lua
 --Import the module so you can start using it
-local BayaPath = loadstring(game:HttpGet(""))()
+local BayaPath = loadstring(game:HttpGet("https://raw.githubusercontent.com/fisiaque/lua/refs/heads/main/BayaPathfinder/src.lua"))()
 
 ```
 
@@ -74,7 +74,7 @@ Your code should look something like this after adding everything in:
 
 ```lua linenums="1"
 --Import the module so you can start using it
-local BayaPath = loadstring(game:HttpGet(""))()
+local BayaPath = loadstring(game:HttpGet("https://raw.githubusercontent.com/fisiaque/lua/refs/heads/main/BayaPathfinder/src.lua"))()
 
 --Define character
 local Character = game.Players.LocalPlayer.Character
@@ -139,7 +139,7 @@ If you are using loops, your final code should look something like this:
 
 ```lua linenums="1"
 --Import the module so you can start using it
-local BayaPath = loadstring(game:HttpGet(""))()
+local BayaPath = loadstring(game:HttpGet("https://raw.githubusercontent.com/fisiaque/lua/refs/heads/main/BayaPathfinder/src.lua"))()
 
 --Define character
 local Character = game.Players.LocalPlayer.Character

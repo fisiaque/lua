@@ -8,8 +8,7 @@ Pathfinding for non-humanoid models can get a little complicated. Consider conve
 
 ```lua linenums="1"
 local TweenService = game:GetService("TweenService")
-
-local BayaPath = loadstring(game:HttpGet(""))()
+local BayaPath = loadstring(game:HttpGet("https://raw.githubusercontent.com/fisiaque/lua/refs/heads/main/BayaPathfinder/src.lua"))()
 
 local Model = workspace.Model
 local Destination = workspace.Destination
@@ -43,8 +42,7 @@ Path:Run(Destination)
 
 ```lua linenums="1"
 local TweenService = game:GetService("TweenService")
-
-local BayaPath = loadstring(game:HttpGet(""))()
+local BayaPath = loadstring(game:HttpGet("https://raw.githubusercontent.com/fisiaque/lua/refs/heads/main/BayaPathfinder/src.lua"))()
 
 local Model = workspace.Model
 local Destination = workspace.Destination
@@ -88,7 +86,7 @@ Path:Run(Destination)
 
 ```lua linenums="1"
 local TweenService = game:GetService("TweenService")
-local BayaPath = loadstring(game:HttpGet(""))()
+local BayaPath = loadstring(game:HttpGet("https://raw.githubusercontent.com/fisiaque/lua/refs/heads/main/BayaPathfinder/src.lua"))()
 
 local Model = workspace.Model
 local Destination = workspace.Destination
