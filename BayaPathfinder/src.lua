@@ -315,7 +315,7 @@ function Path:Run(target)
 	end)
 
 	--Initialize waypoints
-	self._waypoints = self._path:GetWaypoints()
+	self._waypoints = self._path and self._path:GetWaypoints() or nil
 	self._currentWaypoint = 2
 
 	--Refer to Settings.COMPARISON_CHECKS
