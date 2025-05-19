@@ -248,6 +248,7 @@ function Path:Destroy()
 	for k, _ in pairs(self) do
 		self[k] = nil
 	end
+	self = nil
 end
 
 function Path:Stop()
@@ -336,7 +337,7 @@ function Path:Run(target)
 	--Begin pathfinding
 	if self._humanoid then
 		self._humanoid:MoveTo(self._waypoints[self._currentWaypoint].Position)
-	elseif #self._waypoints == 2 then
+	elseif (self._waypoints and #self._waypoints == 2) then
 		self._target = nil
 		self._visualWaypoints = destroyVisualWaypoints(self._visualWaypoints)
 		self._events.Reached:Fire(self._agent, self._waypoints[2])
