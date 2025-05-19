@@ -88,9 +88,11 @@ end
 --Get initial waypoint for non-humanoid
 local function getNonHumanoidWaypoint(self)
 	--Account for multiple waypoints that are sometimes in the same place
-	for i = 2, #self._waypoints do
-		if (self._waypoints[i].Position - self._waypoints[i - 1].Position).Magnitude > 0.1 then
-			return i
+	if self._waypoints then
+		for i = 2, #self._waypoints do
+			if (self._waypoints[i].Position - self._waypoints[i - 1].Position).Magnitude > 0.1 then
+				return i
+			end
 		end
 	end
 	return 2
@@ -115,8 +117,10 @@ end
 
 --Disconnect MoveToFinished connection when pathfinding ends
 local function disconnectMoveConnection(self)
-	self._moveConnection:Disconnect()
-	self._moveConnection = nil
+	if self._moveConnection then
+		self._moveConnection:Disconnect()
+		self._moveConnection = nil
+	end
 end
 
 --Fire the WaypointReached event
@@ -339,10 +343,8 @@ function Path:Run(target)
 		self._visualWaypoints = destroyVisualWaypoints(self._visualWaypoints)
 		self._events.Reached:Fire(self._agent, self._waypoints[2])
 	else
-		if self._currentWaypoint then
-			self._currentWaypoint = getNonHumanoidWaypoint(self)
-			moveToFinished(self, true)
-		end
+		self._currentWaypoint = getNonHumanoidWaypoint(self)
+		moveToFinished(self, true)
 	end
 	return true
 end
