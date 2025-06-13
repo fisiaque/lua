@@ -14,6 +14,8 @@ local Flags = Flags or {
 	COMPARISON_CHECKS = 1;
 
 	JUMP_WHEN_STUCK = true;
+
+	IGNORE_BLOCKED = false;
 }
 
 -- Services
@@ -131,7 +133,7 @@ local function invokeWaypointReached(self)
 end
 
 local function moveToFinished(self, reached)
-	
+
 	--Stop execution if Path is destroyed
 	if not getmetatable(self) then return end
 
@@ -228,11 +230,14 @@ function Path.new(agent, agentParameters, override)
 
 	--Path blocked connection
 	self._path.Blocked:Connect(function(...)
-		if (self._currentWaypoint <= ... and self._currentWaypoint + 1 >= ...) and self._humanoid then
-			setJumpState(self)
-			self._events.Blocked:Fire(self._agent, self._waypoints[...])
+		if not self._settings.IGNORE_BLOCKED then
+			if (self._currentWaypoint <= ... and self._currentWaypoint + 1 >= ...) and self._humanoid then
+				setJumpState(self)
+				self._events.Blocked:Fire(self._agent, self._waypoints[...])
+			end
 		end
 	end)
+
 
 	return self
 end
