@@ -241,19 +241,43 @@ end
 
 --[[ NON-STATIC METHODS ]]--
 function Path:Destroy()
-	for _, event in ipairs(self._events) do
-		event:Destroy()
+	-- Stop running behavior
+	self._running = false
+	self._destroyed = true
+
+	-- Disconnect or destroy all events
+	if self._events then
+		for _, event in ipairs(self._events) do
+			if typeof(event) == "RBXScriptConnection" then
+				event:Disconnect()
+			elseif typeof(event) == "table" and typeof(event.Destroy) == "function" then
+				event:Destroy()
+			end
+		end
+		self._events = nil
 	end
-	self._events = nil
+
+	-- Destroy visual waypoints if they exist
 	if rawget(self, "_visualWaypoints") then
 		self._visualWaypoints = destroyVisualWaypoints(self._visualWaypoints)
 	end
-	self._path:Destroy()
-	setmetatable(self, nil)
-	for k, _ in pairs(self) do
-		self[k] = nil
+
+	-- Stop any NPC movement if applicable
+	local humanoid = self._humanoid or (self._character and self._character:FindFirstChildOfClass("Humanoid"))
+	if humanoid then
+		humanoid:MoveTo(humanoid.RootPart.Position) -- stop movement
 	end
+
+	-- Destroy the Path instance
+	if self._path and typeof(self._path.Destroy) == "function" then
+		self._path:Destroy()
+	end
+
+	-- Final cleanup
+	setmetatable(self, nil)
+	table.clear(self)
 end
+
 
 function Path:Stop()
 	if not self._humanoid then
