@@ -1,93 +1,90 @@
 local Services = setmetatable({}, {
 	__index = function(self, key)
 		local cloneref = cloneref or function(...) return ... end
-		local Succ, Result = pcall(cloneref, game:FindService(key))
-		rawset(self, key, Succ and Result or Instance.new(key))
+		local succ, result = pcall(cloneref, game:FindService(key))
+		rawset(self, key, succ and result or Instance.new(key))
 
 		return rawget(self, key)
 	end
 })
 
-local Flags = Flags or {
-	TIME_VARIANCE = 0.07;
-
-	COMPARISON_CHECKS = 1;
-
-	JUMP_WHEN_STUCK = true;
+local flags = flags or {
+	time_variance = 0.07,
+	comparison_checks = 1,
+	jump_when_stuck = true,
 }
 
 -- Services
-local PathfindingService = Services.PathfindingService
-local Players = Services.Players
+local pathfinding_service = Services.PathfindingService
+local players = Services.Players
 
 local function output(func, msg)
 	func(((func == error and "BayaPathfinder Error: ") or "BayaPathfinder: ")..msg)
 end
+
 local Path = {
-	StatusType = {
-		Idle = "Idle";
-		Active = "Active";
-	};
-	ErrorType = {
-		LimitReached = "LimitReached";
-		TargetUnreachable = "TargetUnreachable";
-		ComputationError = "ComputationError";
-		AgentStuck = "AgentStuck";
-	};
+	status_type = {
+		idle = "Idle",
+		active = "Active",
+	},
+	error_type = {
+		limit_reached = "LimitReached",
+		target_unreachable = "TargetUnreachable",
+		computation_error = "ComputationError",
+		agent_stuck = "AgentStuck",
+	},
 }
+
+Path.__metatable = false
+
 Path.__index = function(table, index)
 	if index == "Stopped" and not table._humanoid then
 		output(error, "Attempt to use Path.Stopped on a non-humanoid.")
 	end
 	return (table._events[index] and table._events[index].Event)
-		or (index == "LastError" and table._lastError)
+		or (index == "LastError" and table._last_error)
 		or (index == "Status" and table._status)
 		or Path[index]
 end
 
---Used to visualize waypoints
-local visualWaypoint = Instance.new("Part")
-visualWaypoint.Size = Vector3.new(0.3, 0.3, 0.3)
-visualWaypoint.Anchored = true
-visualWaypoint.CanCollide = false
-visualWaypoint.Material = Enum.Material.Neon
-visualWaypoint.Shape = Enum.PartType.Ball
+-- Used to visualize waypoints
+local visual_waypoint = Instance.new("Part")
+visual_waypoint.Size = Vector3.new(0.3, 0.3, 0.3)
+visual_waypoint.Anchored = true
+visual_waypoint.CanCollide = false
+visual_waypoint.Material = Enum.Material.Neon
+visual_waypoint.Shape = Enum.PartType.Ball
 
 --[[ PRIVATE FUNCTIONS ]]--
-local function declareError(self, errorType)
-	self._lastError = errorType
-	self._events.Error:Fire(errorType)
+local function declare_error(self, error_type)
+	self._last_error = error_type
+	self._events.Error:Fire(error_type)
 end
 
---Create visual waypoints
-local function createVisualWaypoints(waypoints)
-	local visualWaypoints = {}
+local function create_visual_waypoints(waypoints)
+	local visual_waypoints = {}
 	for _, waypoint in ipairs(waypoints) do
-		local visualWaypointClone = visualWaypoint:Clone()
-		visualWaypointClone.Position = waypoint.Position
-		visualWaypointClone.Parent = workspace
-		visualWaypointClone.Color =
+		local clone = visual_waypoint:Clone()
+		clone.Position = waypoint.Position
+		clone.Parent = workspace
+		clone.Color =
 			(waypoint == waypoints[#waypoints] and Color3.fromRGB(0, 255, 0))
 			or (waypoint.Action == Enum.PathWaypointAction.Jump and Color3.fromRGB(255, 0, 0))
 			or Color3.fromRGB(255, 139, 0)
-		table.insert(visualWaypoints, visualWaypointClone)
+		table.insert(visual_waypoints, clone)
 	end
-	return visualWaypoints
+	return visual_waypoints
 end
 
---Destroy visual waypoints
-local function destroyVisualWaypoints(waypoints)
+local function destroy_visual_waypoints(waypoints)
 	if waypoints then
 		for _, waypoint in ipairs(waypoints) do
 			waypoint:Destroy()
 		end
 	end
-	return
 end
 
---Get initial waypoint for non-humanoid 
-local function getNonHumanoidWaypoint(self)
-	--Account for multiple waypoints that are sometimes in the same place
+local function get_non_humanoid_waypoint(self)
 	if self and (self._waypoints and #self._waypoints ~= nil) then
 		for i = 2, #self._waypoints do
 			if (self._waypoints[i].Position - self._waypoints[i - 1].Position).Magnitude > 0.1 then
@@ -98,154 +95,141 @@ local function getNonHumanoidWaypoint(self)
 	return 2
 end
 
---Make NPC jump
-local function setJumpState(self)
+local function set_jump_state(self)
 	pcall(function()
-		if self._humanoid:GetState() ~= Enum.HumanoidStateType.Jumping and self._humanoid:GetState() ~= Enum.HumanoidStateType.Freefall then
+		if self._humanoid:GetState() ~= Enum.HumanoidStateType.Jumping
+			and self._humanoid:GetState() ~= Enum.HumanoidStateType.Freefall then
 			self._humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 		end
 	end)
 end
 
---Primary move function
 local function move(self)
-	if self._waypoints[self._currentWaypoint].Action == Enum.PathWaypointAction.Jump then
-		setJumpState(self)
+	if self._waypoints[self._current_waypoint].Action == Enum.PathWaypointAction.Jump then
+		set_jump_state(self)
 	end
-	self._humanoid:MoveTo(self._waypoints[self._currentWaypoint].Position)
+	self._humanoid:MoveTo(self._waypoints[self._current_waypoint].Position)
 end
 
---Disconnect MoveToFinished connection when pathfinding ends
-local function disconnectMoveConnection(self)
-	if self._moveConnection then
-		self._moveConnection:Disconnect()
-		self._moveConnection = nil
+local function disconnect_move_connection(self)
+	if self._move_connection then
+		self._move_connection:Disconnect()
+		self._move_connection = nil
 	end
 end
 
---Fire the WaypointReached event
-local function invokeWaypointReached(self)
-	local lastWaypoint = self._waypoints[self._currentWaypoint - 1]
-	local nextWaypoint = self._waypoints[self._currentWaypoint]
-	self._events.WaypointReached:Fire(self._agent, lastWaypoint, nextWaypoint)
+local function invoke_waypoint_reached(self)
+	local last_waypoint = self._waypoints[self._current_waypoint - 1]
+	local next_waypoint = self._waypoints[self._current_waypoint]
+	self._events.WaypointReached:Fire(self._agent, last_waypoint, next_waypoint)
 end
 
-local function moveToFinished(self, reached)
-
-	--Stop execution if Path is destroyed
+local function move_to_finished(self, reached)
 	if not getmetatable(self) then return end
 
-	--Handle case for non-humanoids
 	if not self._humanoid then
-		if reached and self._currentWaypoint + 1 <= #self._waypoints then
-			invokeWaypointReached(self)
-			self._currentWaypoint += 1
+		if reached and self._current_waypoint + 1 <= #self._waypoints then
+			invoke_waypoint_reached(self)
+			self._current_waypoint += 1
 		elseif reached then
-			self._visualWaypoints = destroyVisualWaypoints(self._visualWaypoints)
+			self._visual_waypoints = destroy_visual_waypoints(self._visual_waypoints)
 			self._target = nil
-			self._events.Reached:Fire(self._agent, self._waypoints[self._currentWaypoint])
+			self._events.Reached:Fire(self._agent, self._waypoints[self._current_waypoint])
 		else
-			self._visualWaypoints = destroyVisualWaypoints(self._visualWaypoints)
+			self._visual_waypoints = destroy_visual_waypoints(self._visual_waypoints)
 			self._target = nil
-			declareError(self, self.ErrorType.TargetUnreachable)
+			declare_error(self, self.error_type.target_unreachable)
 		end
 		return
 	end
 
-	if reached and self._currentWaypoint + 1 <= #self._waypoints  then --Waypoint reached
-		if self._currentWaypoint + 1 < #self._waypoints then
-			invokeWaypointReached(self)
+	if reached and self._current_waypoint + 1 <= #self._waypoints then
+		if self._current_waypoint + 1 < #self._waypoints then
+			invoke_waypoint_reached(self)
 		end
-		self._currentWaypoint += 1
+		self._current_waypoint += 1
 		move(self)
-	elseif reached then --Target reached, pathfinding ends
-		disconnectMoveConnection(self)
-		self._status = Path.StatusType.Idle
-		self._visualWaypoints = destroyVisualWaypoints(self._visualWaypoints)
-		self._events.Reached:Fire(self._agent, self._waypoints[self._currentWaypoint])
-	else --Target unreachable
-		disconnectMoveConnection(self)
-		self._status = Path.StatusType.Idle
-		self._visualWaypoints = destroyVisualWaypoints(self._visualWaypoints)
-		declareError(self, self.ErrorType.TargetUnreachable)
+	elseif reached then
+		disconnect_move_connection(self)
+		self._status = Path.status_type.idle
+		self._visual_waypoints = destroy_visual_waypoints(self._visual_waypoints)
+		self._events.Reached:Fire(self._agent, self._waypoints[self._current_waypoint])
+	else
+		disconnect_move_connection(self)
+		self._status = Path.status_type.idle
+		self._visual_waypoints = destroy_visual_waypoints(self._visual_waypoints)
+		declare_error(self, self.error_type.target_unreachable)
 	end
 end
 
---Refer to Settings.COMPARISON_CHECKS
-local function comparePosition(self)
-	if self._currentWaypoint == #self._waypoints then return end
+local function compare_position(self)
+	if self._current_waypoint == #self._waypoints then return end
 	self._position._count = ((self._agent.PrimaryPart.Position - self._position._last).Magnitude <= 0.07 and (self._position._count + 1)) or 0
 	self._position._last = self._agent.PrimaryPart.Position
-	if self._position._count >= self._settings.COMPARISON_CHECKS then
-		if self._settings.JUMP_WHEN_STUCK then
-			setJumpState(self)
+	if self._position._count >= self._settings.comparison_checks then
+		if self._settings.jump_when_stuck then
+			set_jump_state(self)
 		end
-		declareError(self, self.ErrorType.AgentStuck)
+		declare_error(self, self.error_type.agent_stuck)
 	end
 end
 
 --[[ STATIC METHODS ]]--
-function Path.GetNearestCharacter(fromPosition)
+function Path.get_nearest_character(from_position)
 	local character, dist = nil, math.huge
-	for _, player in ipairs(Players:GetPlayers()) do
-		if player.Character and (player.Character.PrimaryPart.Position - fromPosition).Magnitude < dist then
-			character, dist = player.Character, (player.Character.PrimaryPart.Position - fromPosition).Magnitude
+	for _, player in ipairs(players:GetPlayers()) do
+		if player.Character and (player.Character.PrimaryPart.Position - from_position).Magnitude < dist then
+			character, dist = player.Character, (player.Character.PrimaryPart.Position - from_position).Magnitude
 		end
 	end
 	return character
 end
 
 --[[ CONSTRUCTOR ]]--
-function Path.new(agent, agentParameters, override)
+function Path.new(agent, agent_parameters, override)
 	if not (agent and agent:IsA("Model") and agent.PrimaryPart) then
 		output(error, "Pathfinding agent must be a valid Model Instance with a set PrimaryPart.")
 	end
 
 	local self = setmetatable({
-		_settings = override or Flags;
+		_settings = override or flags,
 		_events = {
-			Reached = Instance.new("BindableEvent");
-			WaypointReached = Instance.new("BindableEvent");
-			Blocked = Instance.new("BindableEvent");
-			Error = Instance.new("BindableEvent");
-			Stopped = Instance.new("BindableEvent");
-		};
-		_agent = agent;
-		_humanoid = agent:FindFirstChildOfClass("Humanoid");
-		_path = PathfindingService:CreatePath(agentParameters);
-		_status = "Idle";
-		_t = 0;
+			Reached = Instance.new("BindableEvent"),
+			WaypointReached = Instance.new("BindableEvent"),
+			Blocked = Instance.new("BindableEvent"),
+			Error = Instance.new("BindableEvent"),
+			Stopped = Instance.new("BindableEvent"),
+		},
+		_agent = agent,
+		_humanoid = agent:FindFirstChildOfClass("Humanoid"),
+		_path = pathfinding_service:CreatePath(agent_parameters),
+		_status = "Idle",
+		_t = 0,
 		_position = {
-			_last = Vector3.new();
-			_count = 0;
-		};
+			_last = Vector3.new(),
+			_count = 0,
+		},
 	}, Path)
 
-	--Configure settings
-	for setting, value in pairs(Flags) do
+	for setting, value in pairs(flags) do
 		self._settings[setting] = self._settings[setting] == nil and value or self._settings[setting]
 	end
 
-	--Path blocked connection
 	self._path.Blocked:Connect(function(...)
-		if (self._currentWaypoint <= ... and self._currentWaypoint + 1 >= ...) and self._humanoid then
-			setJumpState(self)
+		if (self._current_waypoint <= ... and self._current_waypoint + 1 >= ...) and self._humanoid then
+			set_jump_state(self)
 			self._events.Blocked:Fire(self._agent, self._waypoints[...])
 		end
 	end)
 
-
 	return self
 end
 
-
 --[[ NON-STATIC METHODS ]]--
 function Path:Destroy()
-	-- Stop running behavior
 	self._running = false
 	self._destroyed = true
 
-	-- Disconnect or destroy all events
 	if self._events then
 		for _, event in ipairs(self._events) do
 			if typeof(event) == "RBXScriptConnection" then
@@ -257,120 +241,107 @@ function Path:Destroy()
 		self._events = nil
 	end
 
-	-- Destroy visual waypoints if they exist
-	if rawget(self, "_visualWaypoints") then
-		self._visualWaypoints = destroyVisualWaypoints(self._visualWaypoints)
+	if rawget(self, "_visual_waypoints") then
+		self._visual_waypoints = destroy_visual_waypoints(self._visual_waypoints)
 	end
 
-	-- Stop any NPC movement if applicable
 	local humanoid = self._humanoid or (self._character and self._character:FindFirstChildOfClass("Humanoid"))
 	if humanoid then
-		humanoid:MoveTo(humanoid.RootPart.Position) -- stop movement
+		humanoid:MoveTo(humanoid.RootPart.Position)
 	end
 
-	-- Destroy the Path instance
 	if self._path and typeof(self._path.Destroy) == "function" then
 		self._path:Destroy()
 	end
 
-	-- Final cleanup
 	setmetatable(self, nil)
 	table.clear(self)
 end
 
-
 function Path:Stop()
+	if self._destroyed then return end
+
 	if not self._humanoid then
 		output(error, "Attempt to call Path:Stop() on a non-humanoid.")
 		return
 	end
-	if self._status == Path.StatusType.Idle then
+	if self._status == Path.status_type.idle then
 		output(function(m)
 			warn(debug.traceback(m))
 		end, "Attempt to run Path:Stop() in idle state")
 		return
 	end
-	disconnectMoveConnection(self)
-	self._status = Path.StatusType.Idle
-	self._visualWaypoints = destroyVisualWaypoints(self._visualWaypoints)
+	disconnect_move_connection(self)
+	self._status = Path.status_type.idle
+	self._visual_waypoints = destroy_visual_waypoints(self._visual_waypoints)
 	self._events.Stopped:Fire(self._model)
 end
 
 function Path:Run(target)
-	--Non-humanoid handle case
+	if self._destroyed then return end
+
 	if not target and not self._humanoid and self._target then
-		moveToFinished(self, true)
+		move_to_finished(self, true)
 		return
 	end
 
-	--Parameter check
 	if not (target and (typeof(target) == "Vector3" or target:IsA("BasePart"))) then
 		output(error, "Pathfinding target must be a valid Vector3 or BasePart.")
 	end
 
-	--Refer to Settings.TIME_VARIANCE
-	if os.clock() - self._t <= self._settings.TIME_VARIANCE and self._humanoid then
+	if os.clock() - self._t <= self._settings.time_variance and self._humanoid then
 		task.wait(os.clock() - self._t)
-		declareError(self, self.ErrorType.LimitReached)
+		declare_error(self, self.error_type.limit_reached)
 		return false
 	elseif self._humanoid then
 		self._t = os.clock()
 	end
 
-	--Compute path
-	local pathComputed, _ = pcall(function()
+	local computed = pcall(function()
 		self._path:ComputeAsync(self._agent.PrimaryPart.Position, (typeof(target) == "Vector3" and target) or target.Position)
 	end)
 
-	--Make sure path computation is successful
-	if not pathComputed
+	if not computed
 		or (self._path and self._path.Status == Enum.PathStatus.NoPath)
 		or (self._path and #self._path:GetWaypoints() < 2)
 		or (self._humanoid and self._humanoid:GetState() == Enum.HumanoidStateType.Freefall) then
-		self._visualWaypoints = destroyVisualWaypoints(self._visualWaypoints)
+		self._visual_waypoints = destroy_visual_waypoints(self._visual_waypoints)
 		task.wait()
-		declareError(self, self.ErrorType.ComputationError)
+		declare_error(self, self.error_type.computation_error)
 		return false
 	end
 
-	--Set status to active; pathfinding starts
-	self._status = (self._humanoid and Path.StatusType.Active) or Path.StatusType.Idle
+	self._status = (self._humanoid and Path.status_type.active) or Path.status_type.idle
 	self._target = target
 
-	--Set network owner to server to prevent "hops"
 	pcall(function()
 		self._agent.PrimaryPart:SetNetworkOwner(nil)
 	end)
 
-	--Initialize waypoints
 	self._waypoints = self._path and self._path:GetWaypoints() or nil
-	self._currentWaypoint = 2
+	self._current_waypoint = 2
 
-	--Refer to Settings.COMPARISON_CHECKS
 	if self._humanoid then
-		comparePosition(self)
+		compare_position(self)
 	end
 
-	--Visualize waypoints
-	destroyVisualWaypoints(self._visualWaypoints)
-	self._visualWaypoints = (self.Visualize and createVisualWaypoints(self._waypoints))
+	destroy_visual_waypoints(self._visual_waypoints)
+	self._visual_waypoints = (self.Visualize and create_visual_waypoints(self._waypoints))
 
-	--Create a new move connection if it doesn't exist already
-	self._moveConnection = self._humanoid and (self._moveConnection or self._humanoid.MoveToFinished:Connect(function(...)
-		moveToFinished(self, ...)
+	self._move_connection = self._humanoid and (self._move_connection or self._humanoid.MoveToFinished:Connect(function(...)
+		move_to_finished(self, ...)
 	end))
 
-	--Begin pathfinding
-	if self and (self._humanoid and self._waypoints and self._currentWaypoint) then
-		self._humanoid:MoveTo(self._waypoints[self._currentWaypoint].Position)
+	if self and (self._humanoid and self._waypoints and self._current_waypoint) then
+		self._humanoid:MoveTo(self._waypoints[self._current_waypoint].Position)
 	elseif self and (self._waypoints and #self._waypoints == 2) then
 		self._target = nil
-		self._visualWaypoints = destroyVisualWaypoints(self._visualWaypoints)
+		self._visual_waypoints = destroy_visual_waypoints(self._visual_waypoints)
 		self._events.Reached:Fire(self._agent, self._waypoints[2])
 	else
-		if self and (self._currentWaypoint) then
-			self._currentWaypoint = getNonHumanoidWaypoint(self)
-			moveToFinished(self, true)
+		if self and (self._current_waypoint) then
+			self._current_waypoint = get_non_humanoid_waypoint(self)
+			move_to_finished(self, true)
 		end
 	end
 	return true
