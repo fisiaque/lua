@@ -14,8 +14,6 @@ local Flags = Flags or {
 	COMPARISON_CHECKS = 1;
 
 	JUMP_WHEN_STUCK = true;
-
-	IGNORE_BLOCKED = false;
 }
 
 -- Services
@@ -230,11 +228,9 @@ function Path.new(agent, agentParameters, override)
 
 	--Path blocked connection
 	self._path.Blocked:Connect(function(...)
-		if not self._settings.IGNORE_BLOCKED then
-			if (self._currentWaypoint <= ... and self._currentWaypoint + 1 >= ...) and self._humanoid then
-				setJumpState(self)
-				self._events.Blocked:Fire(self._agent, self._waypoints[...])
-			end
+		if (self._currentWaypoint <= ... and self._currentWaypoint + 1 >= ...) and self._humanoid then
+			setJumpState(self)
+			self._events.Blocked:Fire(self._agent, self._waypoints[...])
 		end
 	end)
 
