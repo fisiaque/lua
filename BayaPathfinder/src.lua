@@ -1,22 +1,12 @@
-local Services = setmetatable({}, {
-	__index = function(self, key)
-		local cloneref = cloneref or function(...) return ... end
-		local succ, result = pcall(cloneref, game:FindService(key))
-		rawset(self, key, succ and result or Instance.new(key))
-
-		return rawget(self, key)
-	end
-})
-
-local flags = flags or {
+local flags = {
 	time_variance = 0.07,
 	comparison_checks = 1,
 	jump_when_stuck = true,
 }
 
 -- Services
-local pathfinding_service = Services.PathfindingService
-local players = Services.Players
+local pathfinding_service = game:GetService("PathfindingService")
+local players = game:GetService("Players")
 
 local function output(func, msg)
 	func(((func == error and "BayaPathfinder Error: ") or "BayaPathfinder: ")..msg)
@@ -254,7 +244,6 @@ function Path:Destroy()
 		self._path:Destroy()
 	end
 
-	setmetatable(self, nil)
 	table.clear(self)
 end
 
